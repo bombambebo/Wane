@@ -1,6 +1,6 @@
 {
- "name": "จัดเวรแพทย์ รพช.",
- "short_name": "จัดเวร",
+ "name": "Night Shift",
+ "short_name": "Night Shift",
  "description": "โปรแกรมจัดเวรแพทย์ ค่าเวร แลกเวร",
  "lang": "th",
  "start_url": "./",

@@ -3,12 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>จัดเวรแพทย์ รพช.</title>
+<title>Night Shift</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0f766e">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="จัดเวร">
+<meta name="apple-mobile-web-app-title" content="Night Shift">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" type="image/png" href="icon-192.png">
@@ -50,7 +50,7 @@ td select{padding:4px;font-size:13px;min-width:78px}
 </style>
 </head>
 <body>
-<h1>จัดเวรแพทย์ รพช.</h1>
+<h1>Night Shift</h1>
 <p class="hint" id="sync" style="margin:-6px 0 10px"></p>
 <p class="hint" id="insth" style="display:none;margin:-4px 0 10px"></p>
 <button class="sec" id="inst" style="display:none;margin-bottom:10px">ติดตั้งเป็นแอป</button>
@@ -127,6 +127,7 @@ td select{padding:4px;font-size:13px;min-width:78px}
   <div id="mfl"></div>
   <div class="scroll" style="margin-top:8px"><table id="pay"></table></div>
   <p class="hint" id="payn"></p>
+  <button class="sec" id="payx" style="margin-top:6px">ส่งออกค่าเวร (Excel)</button>
   <p class="hint">เช้า = แพทย์ที่อยู่เวรในวันหยุด · บ่าย/ดึก = ทุกวันที่อยู่เวร · ราวน์ = แพทย์ R ในวันหยุด</p>
 </div>
 
@@ -590,6 +591,38 @@ $('mfa').onclick=()=>{const f=+$('mfx').value,a=$('mf1').value,b=$('mf2').value|
 $('mfy').onclick=()=>{const [y,m]=$('month').value.split('-').map(Number),y0=m>=7?y:y-1;$('mf1').value=`${y0}-12-31`;$('mf2').value=`${y0+1}-01-02`;$('mfx').value=$('mfx').value||'1.5'};
 $('mfs').onclick=()=>{const y=+$('month').value.slice(0,4);$('mf1').value=`${y}-04-13`;$('mf2').value=`${y}-04-15`;$('mfx').value=$('mfx').value||'1.5'};
 $('mfl').addEventListener('click',e=>{const b=e.target.closest('[data-mdel]');if(!b)return;const g=mgroups()[+b.dataset.mdel];if(g){g.keys.forEach(k=>delete mult[k]);render()}});
+
+async function exportPayXlsx(){
+  if(typeof ExcelJS==='undefined'){alert('โหลดตัวสร้าง Excel ไม่สำเร็จ (ต้องมีอินเทอร์เน็ตในครั้งแรกเพื่อโหลดตัวสร้าง Excel)');return}
+  const D=days(),ym=$('month').value,[y,m]=ym.split('-').map(Number);
+  const FONT={name:'Tahoma',size:10},fill=c=>({type:'pattern',pattern:'solid',fgColor:{argb:'FF'+c}});
+  const wb=new ExcelJS.Workbook();
+  {const pr=payCalc(),wp=wb.addWorksheet('ค่าเวร'),HD2=['แพทย์','เช้า','ค่าเวร','บ่าย','ค่าเวร','ดึก','ค่าเวร','ราวน์','ค่าเวร','รวม'];
+    const hr=wp.addRow(HD2);hr.eachCell(c=>{c.font={...FONT,bold:true};c.fill=fill('E6B8B7');c.alignment={horizontal:'center'}});
+    const T={m:0,a:0,n:0,r:0},TA={m:0,a:0,n:0,r:0};let G=0;
+    docs.forEach((nm,i)=>{const r=i+2,p=pr[i];let tot=0;['m','a','n','r'].forEach(k=>{T[k]+=p[k];const v=payOf(p,k);TA[k]+=v;tot+=v});G+=tot;
+      wp.addRow([nm,p.m,{formula:`ROUND((B${r}+N${r})*$L$2,0)`,result:payOf(p,'m')},p.a,{formula:`ROUND((D${r}+O${r})*$L$3,0)`,result:payOf(p,'a')},p.n,{formula:`ROUND((F${r}+P${r})*$L$4,0)`,result:payOf(p,'n')},p.r,{formula:`ROUND((H${r}+Q${r})*$L$5,0)`,result:payOf(p,'r')},{formula:`C${r}+E${r}+G${r}+I${r}`,result:tot},'',  '', '', p.xm,p.xa,p.xn,p.xr])});
+    const e=docs.length+1,tr=docs.length+2,sm=(col,res)=>({formula:`SUM(${col}2:${col}${e})`,result:res});
+    const trow=wp.addRow(['รวม',sm('B',T.m),sm('C',TA.m),sm('D',T.a),sm('E',TA.a),sm('F',T.n),sm('G',TA.n),sm('H',T.r),sm('I',TA.r),sm('J',G)]);
+    trow.eachCell(c=>{c.font={...FONT,bold:true};c.fill=fill('E6B8B7')});
+    wp.getCell('K1').value='อัตราต่อเวร';wp.getCell('K2').value='เช้า';wp.getCell('K3').value='บ่าย';wp.getCell('K4').value='ดึก';wp.getCell('K5').value='ราวน์';
+    wp.getCell('L2').value=rates.m;wp.getCell('L3').value=rates.a;wp.getCell('L4').value=rates.n;wp.getCell('L5').value=rates.r;
+    wp.getCell('K7').value='แก้อัตราในช่อง L2–L5 ยอดคำนวณใหม่เอง';
+    ['N1','O1','P1','Q1'].forEach((c,i)=>{wp.getCell(c).value='เวรเพิ่มจากตัวคูณ ('+['เช้า','บ่าย','ดึก','ราวน์'][i]+')';wp.getCell(c).font={...FONT,bold:true}});
+    {const ym2=$('month').value,md=Object.keys(mult).filter(k=>k.indexOf(ym2+'-')===0&&mult[k]!==1).map(k=>+k.slice(ym2.length+1)+' (×'+mult[k]+')').join(', ');wp.getCell('K8').value=md?'วันที่คิดตัวคูณ: '+md:'ไม่มีวันคิดตัวคูณ';wp.getCell('K9').value='คอลัมน์ N–Q = จำนวนเวรที่เพิ่มจากตัวคูณช่วงหยุดยาว (นับรวมในค่าเวรแล้ว)'}
+    wp.eachRow(r=>r.eachCell(c=>{if(!c.font)c.font=FONT}));
+    wp.getColumn(1).width=20;for(let c=2;c<=10;c++)wp.getColumn(c).width=11;wp.getColumn(11).width=14;wp.getColumn(12).width=10;for(let c=14;c<=17;c++)wp.getColumn(c).width=18;
+    [3,5,7,9,10].forEach(c=>{for(let r=2;r<=tr;r++)wp.getCell(r,c).numFmt='#,##0'});
+  }
+  {const wd=wb.addWorksheet('รายวัน');
+    wd.addRow(['วันที่','วัน','ประเภทวัน','ตัวคูณ','แพทย์อยู่เวร (บ่าย/ดึก)','R (ราวน์)']).eachCell(c=>{c.font={...FONT,bold:true};c.fill=fill('E6B8B7')});
+    const rd=RD[ym]||[];
+    D.forEach((d,di)=>{const wk=d.w==0||d.w==6;
+      wd.addRow([`${d.n}/${m}/${y+543}`,TH[d.w],d.wk?(wk?'เสาร์-อาทิตย์':'วันหยุดราชการ'):'วันทำการ',mult[ym+'-'+d.n]||1,(assign[di]||[]).filter(i=>i>=0).map(i=>docs[i]).join(', '),d.wk&&rd[di]>=0?docs[rd[di]]:''])});
+    [14,8,16,10,28,20].forEach((w,i)=>wd.getColumn(i+1).width=w)}
+  try{const buf=await wb.xlsx.writeBuffer();await downloadFile(`doctor-pay-${ym}.xlsx`,new Blob([buf],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}))}catch(e){alert('สร้างไฟล์ Excel ไม่สำเร็จ')}
+}
+$('payx').onclick=exportPayXlsx;
 docs=DEFD();cfg=DEFC();U=DEFU();
 renderNames();renderUnits();render();
 try{const raw=localStorage.getItem(LSK);if(raw){applyState(JSON.parse(raw));$('sync').textContent='โหลดข้อมูลที่บันทึกไว้ในเครื่องนี้แล้ว'}else $('sync').textContent='ข้อมูลจะถูกบันทึกในเบราว์เซอร์เครื่องนี้เท่านั้น'}catch(e){}
