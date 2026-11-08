@@ -4,6 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>จัดเวรแพทย์ รพช.</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="จัดเวร">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" type="image/png" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f6f7f9;--card:#fff;--tx:#1b2430;--mut:#6b7686;--bd:#dde1e7;--ac:#0f766e;--acbg:#d9f2ee;--bad:#b42318;--badbg:#fde4e1;--wk:#fff4e0;
@@ -28,6 +36,7 @@ td.d{text-align:left;cursor:pointer}td.d small{color:var(--mut)}
 tr.wk td{background:var(--wk)}
 td.u{cursor:pointer;user-select:none;width:46px}
 td.u.x{background:var(--badbg);color:var(--bad);font-weight:600}
+td.u.w{background:var(--acbg);color:var(--ac);font-size:11px;font-weight:600}
 td.u.n{background:var(--wk);color:var(--ac);font-size:11px;font-weight:600}
 td select{padding:4px;font-size:13px;min-width:78px}
 .sum{display:flex;gap:8px;flex-wrap:wrap}
@@ -43,6 +52,8 @@ td select{padding:4px;font-size:13px;min-width:78px}
 <body>
 <h1>จัดเวรแพทย์ รพช.</h1>
 <p class="hint" id="sync" style="margin:-6px 0 10px"></p>
+<p class="hint" id="insth" style="display:none;margin:-4px 0 10px"></p>
+<button class="sec" id="inst" style="display:none;margin-bottom:10px">ติดตั้งเป็นแอป</button>
 
 <div class="card">
   <div class="row">
@@ -64,7 +75,7 @@ td select{padding:4px;font-size:13px;min-width:78px}
     <button id="gen">จัดเวรอัตโนมัติ</button>
     <button id="xl" class="sec">ส่งออก Excel</button><button class="sec" id="bk">สำรองข้อมูล</button><button class="sec" id="rs">นำเข้าข้อมูล</button><input type="file" id="rsf" accept=".json,application/json" style="display:none"><button class="sec" id="rot">สลับในเวลาใหม่</button><button class="sec" id="clr">ล้างตาราง</button>
   </div>
-  <p class="hint">แตะช่องใต้ชื่อแพทย์เพื่อทำเครื่องหมายวันที่ไม่ว่าง: แตะ 1 ครั้ง = ✕ ไม่ว่างทั้งวัน, 2 ครั้ง = "ไม่เวร" (ทำงานในเวลาปกติ แต่ไม่อยู่เวรบ่าย-ดึก), 3 ครั้ง = ล้าง · แตะวันที่เพื่อกำหนดเป็นวันหยุดพิเศษ · แก้เวรด้วยมือได้จากช่องเลือก</p>
+  <p class="hint">แตะช่องใต้ชื่อแพทย์เพื่อทำเครื่องหมายวันที่ไม่ว่าง: แตะ 1 ครั้ง = ✕ ไม่ว่างทั้งวัน, 2 ครั้ง = "ไม่เวร" (ทำงานในเวลาปกติ แต่ไม่อยู่เวรบ่าย-ดึก), 3 ครั้ง = "ขอเวร" (อยากอยู่เวรวันนั้น), 4 ครั้ง = ล้าง · แตะวันที่เพื่อกำหนดเป็นวันหยุดพิเศษ · แก้เวรด้วยมือได้จากช่องเลือก</p>
   <div id="warn"></div>
   <p class="hint" id="hl"></p>
 </div>
@@ -79,8 +90,45 @@ td select{padding:4px;font-size:13px;min-width:78px}
   </div>
   <button id="lra" style="margin-top:8px">ใช้กับช่วงนี้</button>
 </div>
+<div class="card">
+  <p style="margin:0 0 6px;font-size:13px;color:var(--mut)">นำเข้าวันลา / ไม่เอาเวร / ขออยู่เวร จากข้อความ LINE (คัดลอกมาวาง)</p>
+  <textarea id="imp" rows="6" placeholder="วางข้อความจากโน้ตหรือแชทกลุ่ม LINE ตรงนี้ เช่น&#10;Parin&#10;ไม่เอาเวร 15-16 มค 70&#10;Supermai&#10;ขออยู่ เวร 8 13 27 เดือน พฤศจิกายน" style="width:100%;box-sizing:border-box;padding:8px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit"></textarea>
+  <div class="row" style="margin-top:8px;align-items:end"><div><label>ถ้าข้อความไม่มีชื่อผู้ส่ง ให้เป็นของ</label><select id="impd"></select></div><button id="impb">อ่านข้อความ</button></div>
+  <div id="impr"></div>
+</div>
+<div class="card">
+  <p style="margin:0 0 6px;font-size:13px;color:var(--mut)">แลกเวร / ซื้อเวร (บันทึกประวัติ ค่าเวรจ่ายให้คนที่ขึ้นเวรจริง)</p>
+  <div class="row">
+    <div><label>ประเภท</label><select id="swt"><option value="swap">แลกเวร (สลับกัน 2 วัน)</option><option value="give">ซื้อเวร/โอนเวร (คนอื่นขึ้นแทน)</option></select></div>
+    <div><label>เจ้าของเวรเดิม</label><select id="swf"></select></div>
+    <div><label>คนที่ขึ้นเวรแทน</label><select id="swto"></select></div>
+  </div>
+  <div class="row" style="margin-top:6px">
+    <div><label>วันที่เวรของเจ้าของเดิม</label><input type="date" id="swd1"></div>
+    <div id="swd2w"><label>วันที่เวรของอีกฝ่าย (ที่เจ้าของเดิมไปขึ้นแทน)</label><input type="date" id="swd2"></div>
+  </div>
+  <label style="margin-top:6px">หมายเหตุ</label><input id="swn">
+  <button id="swb" style="margin-top:8px">บันทึกและสลับในตาราง</button>
+  <div id="swm"></div><div id="swr"></div>
+</div>
 <div class="card scroll"><table id="tbl"></table></div>
 <div class="card"><div class="sum" id="sum"></div></div>
+<div class="card">
+  <p style="margin:0 0 6px;font-size:13px;color:var(--mut)">ค่าเวรเดือนนี้ (บาทต่อเวร)</p>
+  <div class="row">
+    <div><label>เช้า (คนอยู่เวรวันหยุด)</label><input type="number" min="0" id="rt_m"></div>
+    <div><label>บ่าย</label><input type="number" min="0" id="rt_a"></div>
+    <div><label>ดึก</label><input type="number" min="0" id="rt_n"></div>
+    <div><label>ราวน์ (R)</label><input type="number" min="0" id="rt_r"></div>
+  </div>
+  <p style="margin:12px 0 6px;font-size:13px;color:var(--mut)">ช่วงหยุดยาว (ค่าเวรคูณ เช่น ปีใหม่ สงกรานต์ ตั้งตัวคูณเป็น 1 เพื่อลบ)</p>
+  <div class="row"><div><label>ตัวคูณ</label><input type="number" step="0.1" min="0" id="mfx" value="1.5"></div><div><label>ตั้งแต่วันที่</label><input type="date" id="mf1"></div><div><label>ถึงวันที่</label><input type="date" id="mf2"></div></div>
+  <div class="row" style="margin-top:6px"><button id="mfa">ตั้งช่วงนี้</button><button class="sec" id="mfy">ปีใหม่ 31 ธ.ค.–2 ม.ค.</button><button class="sec" id="mfs">สงกรานต์ 13–15 เม.ย.</button></div>
+  <div id="mfl"></div>
+  <div class="scroll" style="margin-top:8px"><table id="pay"></table></div>
+  <p class="hint" id="payn"></p>
+  <p class="hint">เช้า = แพทย์ที่อยู่เวรในวันหยุด · บ่าย/ดึก = ทุกวันที่อยู่เวร · ราวน์ = แพทย์ R ในวันหยุด</p>
+</div>
 
 <!-- ถ้าใช้ไม่ได้เมื่อไม่มีอินเทอร์เน็ต: ดาวน์โหลด exceljs.min.js (4.4.0) ไว้โฟลเดอร์เดียวกัน แล้วแก้ src เป็น "exceljs.min.js" -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -113,11 +161,11 @@ function render(){
   plan=planIn(D,assign);let h='<tr><th style="text-align:left">วันที่</th>'+docs.map(n=>`<th>${esc(n)}</th>`).join('')+'<th>เวรนอกเวลา</th><th>ในเวลา</th></tr>';
   D.forEach((d,di)=>{
     h+=`<tr class="${d.wk?'wk':''}"><td class="d" data-h="${d.n}">${d.n} <small>${TH[d.w]}${hol[$('month').value+'-'+d.n]?' ★':''}</small></td>`;
-    docs.forEach((_,i)=>{const x=unav[key(d.n,i)];h+=`<td class="u${x===true?' x':x?' n':''}" data-d="${d.n}" data-i="${i}">${x===true?'✕':x?'ไม่เวร':''}</td>`});
+    docs.forEach((_,i)=>{const x=unav[key(d.n,i)],wv=!x&&want[key(d.n,i)];h+=`<td class="u${x===true?' x':x?' n':wv?' w':''}" data-d="${d.n}" data-i="${i}">${x===true?'✕':x?'ไม่เวร':wv?'ขอเวร':''}</td>`});
     h+='<td>'+assign[di].map((a,s)=>`<select data-di="${di}" data-s="${s}">${opts(a)}</select>`).join(' ')+'</td><td style="text-align:left;font-size:12px">'+inh(D,di)+'</td></tr>';
   });
   $('tbl').innerHTML=h;
-  $('tbl').querySelectorAll('td.u').forEach(el=>el.onclick=()=>{const k=key(el.dataset.d,el.dataset.i);unav[k]=!unav[k]?true:unav[k]===true?'n':false;render()});
+  $('tbl').querySelectorAll('td.u').forEach(el=>el.onclick=()=>{const k=key(el.dataset.d,el.dataset.i);if(!unav[k]&&!want[k]){unav[k]=true}else if(unav[k]===true){unav[k]='n'}else if(unav[k]==='n'){unav[k]=false;want[k]=true}else{want[k]=false;unav[k]=false}render()});
   $('tbl').querySelectorAll('td.d').forEach(el=>el.onclick=()=>{const k=$('month').value+'-'+el.dataset.h;hol[k]=!hol[k];render()});
   $('tbl').querySelectorAll('select').forEach(el=>el.onchange=()=>{assign[+el.dataset.di][+el.dataset.s]=+el.value;render()});
   summary();
@@ -239,6 +287,26 @@ async function exportXlsx(){
   const lr=4+docs.length*3+1;ws.mergeCells(lr,1,lr,last);const lg=ws.getCell(lr,1);
   lg.value='รหัส: '+U.map(u=>code(u.name)+' = '+(u.note||u.name)).join(' · ')+' · R = เวรราวน์วันหยุด · ล = ลา · x = ไม่รับเวร · แถว ช/บ/ด = เช้า/บ่าย/ดึก (E ในแถว บ/ด = เวรนอกเวลา)';
   lg.font={...FONT,size:9};lg.alignment={wrapText:true,vertical:'top'};ws.getRow(lr).height=32;
+  {const pr=payCalc(),wp=wb.addWorksheet('ค่าเวร'),HD2=['แพทย์','เช้า','ค่าเวร','บ่าย','ค่าเวร','ดึก','ค่าเวร','ราวน์','ค่าเวร','รวม'];
+    const hr=wp.addRow(HD2);hr.eachCell(c=>{c.font={...FONT,bold:true};c.fill=fill('E6B8B7');c.alignment={horizontal:'center'}});
+    const T={m:0,a:0,n:0,r:0},TA={m:0,a:0,n:0,r:0};let G=0;
+    docs.forEach((nm,i)=>{const r=i+2,p=pr[i];let tot=0;['m','a','n','r'].forEach(k=>{T[k]+=p[k];const v=payOf(p,k);TA[k]+=v;tot+=v});G+=tot;
+      wp.addRow([nm,p.m,{formula:`ROUND((B${r}+N${r})*$L$2,0)`,result:payOf(p,'m')},p.a,{formula:`ROUND((D${r}+O${r})*$L$3,0)`,result:payOf(p,'a')},p.n,{formula:`ROUND((F${r}+P${r})*$L$4,0)`,result:payOf(p,'n')},p.r,{formula:`ROUND((H${r}+Q${r})*$L$5,0)`,result:payOf(p,'r')},{formula:`C${r}+E${r}+G${r}+I${r}`,result:tot},'',  '', '', p.xm,p.xa,p.xn,p.xr])});
+    const e=docs.length+1,tr=docs.length+2,sm=(col,res)=>({formula:`SUM(${col}2:${col}${e})`,result:res});
+    const trow=wp.addRow(['รวม',sm('B',T.m),sm('C',TA.m),sm('D',T.a),sm('E',TA.a),sm('F',T.n),sm('G',TA.n),sm('H',T.r),sm('I',TA.r),sm('J',G)]);
+    trow.eachCell(c=>{c.font={...FONT,bold:true};c.fill=fill('E6B8B7')});
+    wp.getCell('K1').value='อัตราต่อเวร';wp.getCell('K2').value='เช้า';wp.getCell('K3').value='บ่าย';wp.getCell('K4').value='ดึก';wp.getCell('K5').value='ราวน์';
+    wp.getCell('L2').value=rates.m;wp.getCell('L3').value=rates.a;wp.getCell('L4').value=rates.n;wp.getCell('L5').value=rates.r;
+    wp.getCell('K7').value='แก้อัตราในช่อง L2–L5 ยอดคำนวณใหม่เอง';
+    ['N1','O1','P1','Q1'].forEach((c,i)=>{wp.getCell(c).value='เวรเพิ่มจากตัวคูณ ('+['เช้า','บ่าย','ดึก','ราวน์'][i]+')';wp.getCell(c).font={...FONT,bold:true}});
+    {const ym2=$('month').value,md=Object.keys(mult).filter(k=>k.indexOf(ym2+'-')===0&&mult[k]!==1).map(k=>+k.slice(ym2.length+1)+' (×'+mult[k]+')').join(', ');wp.getCell('K8').value=md?'วันที่คิดตัวคูณ: '+md:'ไม่มีวันคิดตัวคูณ';wp.getCell('K9').value='คอลัมน์ N–Q = จำนวนเวรที่เพิ่มจากตัวคูณช่วงหยุดยาว (นับรวมในค่าเวรแล้ว)'}
+    wp.eachRow(r=>r.eachCell(c=>{if(!c.font)c.font=FONT}));
+    wp.getColumn(1).width=20;for(let c=2;c<=10;c++)wp.getColumn(c).width=11;wp.getColumn(11).width=14;wp.getColumn(12).width=10;for(let c=14;c<=17;c++)wp.getColumn(c).width=18;
+    [3,5,7,9,10].forEach(c=>{for(let r=2;r<=tr;r++)wp.getCell(r,c).numFmt='#,##0'});
+  }
+  {const ms=monthSwaps();if(ms.length){const w3=wb.addWorksheet('แลกเวร');w3.addRow(['วันที่เวร','ประเภท','เจ้าของเวรเดิม','คนที่ขึ้นเวร','วันที่เวรของอีกฝ่าย','หมายเหตุ','สถานะ']).eachCell(c=>{c.font={...FONT,bold:true}});
+    ms.forEach(e=>w3.addRow([fmtD(e.d1),e.ty==='swap'?'แลกเวร':'ซื้อเวร/โอนเวร',docs[e.f]||'',docs[e.to]||'',e.d2?fmtD(e.d2):'',e.note||'','ใช้งาน'.replace('ใช้งาน',e.void?'ถูกล้างเมื่อจัดเวรใหม่':'ใช้งาน')]));
+    [14,16,18,18,20,24,22].forEach((w,i)=>w3.getColumn(i+1).width=w)}}
   const w2=wb.addWorksheet('สรุป');w2.addRow(['แพทย์','เวรนอกเวลา','เวรวันหยุด','เวรราวน์ (R)',...U.map(u=>u.name)]).font={...FONT,bold:true};
   docs.forEach((n,i)=>{let c=0,w=0;assign.forEach((row,di)=>{if(row.includes(i)){c++;if(D[di]&&D[di].wk)w++}});w2.addRow([n,c,w,(RD[ym]||[]).filter(x=>x===i).length,...U.map(u=>plan.filter(p=>p&&p.a[u.name]&&p.a[u.name].includes(i)).length)])});
   w2.getColumn(1).width=20;
@@ -268,14 +336,14 @@ function generate(){
         for(let i=0;i<N;i++)if(!unav[key(d.n,i)]&&!row.includes(i)&&di-last[i]-1>=r&&okc(i,d,cnt))cand.push(i);
         if(!cand.length)for(let i=0;i<N;i++)if(!unav[key(d.n,i)]&&!row.includes(i)&&okc(i,d,cnt))cand.push(i);
         if(!cand.length){row.push(-1);empty++;continue}
-        const sc={};cand.forEach(i=>sc[i]=cnt[i]*10+(d.wk?wc[i]*15:0)+(cfg[i].max!==''||cfg[i].days.some(x=>!x)?12:0)+Math.random()*12);cand.sort((a,b)=>sc[a]-sc[b]);
+        const sc={};cand.forEach(i=>sc[i]=cnt[i]*10+(d.wk?wc[i]*15:0)+(cfg[i].max!==''||cfg[i].days.some(x=>!x)?12:0)+Math.random()*12-(want[key(d.n,i)]?1000:0));cand.sort((a,b)=>sc[a]-sc[b]);
         const p=cand[0];row.push(p);cnt[p]++;if(d.wk)wc[p]++;
       }
       row.forEach(p=>{if(p>=0)last[p]=di});res.push(row)});
     const v=a=>{const m=a.reduce((x,y)=>x+y,0)/a.length;return a.reduce((x,y)=>x+(y-m)**2,0)/a.length};
     const fl=docs.map((_,i)=>i).filter(i=>cfg[i].max===''&&cfg[i].days.every(x=>x));const pick=a=>(fl.length?fl:a.map((_,i)=>i)).map(i=>a[i]);
     let rv=0;res.forEach((row,di)=>row.forEach(p=>{if(p>=0&&di>0&&res[di-1].includes(p))rv++}));
-    const cost=v(pick(cnt))+2*v(pick(wc))+100*empty+3*rv+20*gaps(D,res).length;
+    const cost=v(pick(cnt))+2*v(pick(wc))+100*empty+3*rv+20*gaps(D,res).length+50*unmet(D,res);
     if(cost<bc){bc=cost;best=res}
   }
   assign=best;render();
@@ -290,17 +358,21 @@ const P4='ER, OPD, NCD 1, NCD 2';
 cfg=[{pool:'O, O1',fix:'',max:'3',days:[true,false,false,false,false,true,true]},{pool:P4,fix:'อ:OPD',max:'',days:ALL()},{pool:P4,fix:'',max:'',days:ALL()},{pool:P4,fix:'',max:'',days:ALL()},{pool:P4,fix:'อ:NCD 1',max:'',days:ALL()}];
 U=[{name:'ผอ.',need:1,noc:false,am:'OPD',pm:'บริหาร'},{name:'ER',need:1,noc:true,am:'ER',pm:'ER'},{name:'OPD',need:1,noc:false,am:'OPD',pm:'OPD'},{name:'NCD 1',need:1,noc:false,am:'NCD',pm:'NCD'},{name:'NCD 2',need:1,noc:false,am:'NCD',pm:'OPD'}];
 function removeDoc(r){if(docs.length<2)return;docs.splice(r,1);cfg.splice(r,1);
-  const nu={};Object.keys(unav).forEach(k=>{const p=k.lastIndexOf(':'),i=+k.slice(p+1);if(i==r||!unav[k])return;nu[k.slice(0,p+1)+(i>r?i-1:i)]=unav[k]});unav=nu;assign=[];RD={};renderNames();render()}
+  const nu={};Object.keys(unav).forEach(k=>{const p=k.lastIndexOf(':'),i=+k.slice(p+1);if(i==r||!unav[k])return;nu[k.slice(0,p+1)+(i>r?i-1:i)]=unav[k]});unav=nu;{const nw={};Object.keys(want).forEach(k=>{const p=k.lastIndexOf(':'),i=+k.slice(p+1);if(i==r||!want[k])return;nw[k.slice(0,p+1)+(i>r?i-1:i)]=1});want=nw}swaps=swaps.filter(x=>x.f!=r&&x.to!=r).map(x=>({...x,f:x.f>r?x.f-1:x.f,to:x.to>r?x.to-1:x.to}));assign=[];RD={};renderNames();render()}
 $('names').addEventListener('click',e=>{const b=e.target.closest('[data-del]');if(b)removeDoc(+b.dataset.del)});
 $('addd').onclick=()=>{docs.push('หมอ '+String.fromCharCode(65+docs.length));cfg.push({pool:P4,fix:'',max:'',days:ALL()});assign=[];renderNames();render()};
-let RD={},AS={},curM=$('month').value,applying=false,ready=false,sdoc=null,stimer=null;
+let mult={},swaps=[],rates={m:1725,a:1725,n:1150,r:431},want={},RD={},AS={},curM=$('month').value,applying=false,ready=false,sdoc=null,stimer=null;
 const myId=Math.random().toString(36).slice(2);
-function snapshotState(){AS[$('month').value]=assign;return{ver:2,docs,cfg,U,unav,hol,AS,RD,seed,slots:$('slots').value,rest:$('rest').value,nextoff:$('nextoff').checked}}
+function snapshotState(){AS[$('month').value]=assign;return{ver:2,docs,cfg,U,unav,want,rates,swaps,mult,hol,AS,RD,seed,slots:$('slots').value,rest:$('rest').value,nextoff:$('nextoff').checked}}
 const LSK='doctor-shift-scheduler-v1';
-function downloadFile(name,blob){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
+async function downloadFile(name,blob){
+  const mobile=/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1);
+  const standalone=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;
+  if(mobile&&standalone&&navigator.canShare){try{const f=new File([blob],name,{type:blob.type||'application/octet-stream'});if(navigator.canShare({files:[f]})){await navigator.share({files:[f],title:name});return}}catch(e){if(e&&e.name==='AbortError')return}}
+  const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),4000)}
 function saveSoon(){if(applying)return;clearTimeout(stimer);stimer=setTimeout(()=>{try{localStorage.setItem(LSK,JSON.stringify(snapshotState()));$('sync').textContent='บันทึกในเครื่องนี้แล้ว ✓ (อย่าลืมกด สำรองข้อมูล เก็บเป็นไฟล์)'}catch(e){$('sync').textContent='บันทึกในเบราว์เซอร์ไม่ได้ — ใช้ปุ่ม สำรองข้อมูล เก็บเป็นไฟล์แทน'}},500)}
-function applyState(s){applying=true;try{docs=s.docs;cfg=s.cfg;U=(s.ver||1)<2?DEFU():s.U;U=U.filter(u=>u.name!=='ผอ.');cfg.forEach(c=>{const p=sp(c.pool);if(p.includes('ผอ.'))c.pool=p.filter(x=>x!=='ผอ.').concat(p.includes('O')?[]:['O']).join(', ')});cfg.forEach((c,i)=>{if(c.pool==='O'&&/ผอ/.test(docs[i]||''))c.pool='O, O1'});U.forEach(u=>{const d=DEFU().find(x=>x.name==u.name);if(d){if(u.prio==null)u.prio=d.prio;if(u.opt==null)u.opt=d.opt}});unav=s.unav||{};hol=s.hol||{};AS=s.AS||{};RD=s.RD||{};seed=s.seed||1;if(s.slots)$('slots').value=s.slots;if(s.rest)$('rest').value=s.rest;$('nextoff').checked=!!s.nextoff;assign=AS[$('month').value]||[];renderNames();renderUnits();render()}finally{applying=false}}
-const _sum=summary;summary=function(){_sum();rWarn();saveSoon()};
+function applyState(s){applying=true;try{docs=s.docs;cfg=s.cfg;U=(s.ver||1)<2?DEFU():s.U;U=U.filter(u=>u.name!=='ผอ.');cfg.forEach(c=>{const p=sp(c.pool);if(p.includes('ผอ.'))c.pool=p.filter(x=>x!=='ผอ.').concat(p.includes('O')?[]:['O']).join(', ')});cfg.forEach((c,i)=>{if(c.pool==='O'&&/ผอ/.test(docs[i]||''))c.pool='O, O1'});U.forEach(u=>{const d=DEFU().find(x=>x.name==u.name);if(d){if(u.prio==null)u.prio=d.prio;if(u.opt==null)u.opt=d.opt}});unav=s.unav||{};hol=s.hol||{};want=s.want||{};swaps=s.swaps||[];mult=s.mult||{};rates=s.rates||{m:1725,a:1725,n:1150,r:431};AS=s.AS||{};RD=s.RD||{};seed=s.seed||1;if(s.slots)$('slots').value=s.slots;if(s.rest)$('rest').value=s.rest;$('nextoff').checked=!!s.nextoff;assign=AS[$('month').value]||[];renderNames();renderUnits();render()}finally{applying=false}}
+const _sum=summary;summary=function(){_sum();rWarn();wantWarn();renderPay();renderSw();saveSoon()};
 $('rest').onchange=summary;
 $('month').onchange=()=>{AS[curM]=assign;curM=$('month').value;assign=AS[curM]||[];render()};
 const P5='ER, O, O1, NCD 1, NCD 2';
@@ -367,7 +439,7 @@ function genR(){
 function rWarn(){const D=days(),rd=RD[$('month').value];if(!rd||!rd.length)return;
   const miss=D.filter((d,di)=>d.wk&&!(rd[di]>=0)).map(d=>d.n);
   if(miss.length)$('warn').insertAdjacentHTML('beforeend',`<div class="warn">วันที่ ${miss.join(', ')}: ยังไม่มีเวรราวน์ (R)</div>`)}
-const _gen=generate;generate=function(){_gen();genR();render()};
+const _gen=generate;generate=function(){const ms=monthSwaps().filter(x=>!x.void);if(ms.length&&!confirm('มีบันทึกแลกเวร '+ms.length+' รายการในเดือนนี้ การจัดเวรอัตโนมัติใหม่จะล้างผลการแลกเวร (ประวัติยังเก็บไว้) ต้องการดำเนินการต่อ?'))return;ms.forEach(x=>x.void=true);_gen();genR();render()};
 $('gen').onclick=generate;
 $('resetd').onclick=()=>{if(!confirm('รีเซ็ตรายชื่อแพทย์และตำแหน่งเป็นค่าตั้งต้นใหม่? (วันลาเดิมยังอยู่ แต่ตารางเวรเดิมจะถูกล้าง)'))return;docs=DEFD();cfg=DEFC();U=DEFU();assign=[];AS={};RD={};renderNames();renderUnits();render()};
 function deriveR(D,res){
@@ -387,12 +459,150 @@ function renderUnits(){
   $('units').querySelectorAll('button[data-k=x]').forEach(el=>el.onclick=()=>{U.splice(+el.dataset.i,1);renderUnits();render()});
   $('addu').onclick=()=>{U.push({name:'ตำแหน่งใหม่',need:1,noc:false,excl:false,am:'',pm:'',note:''});renderUnits();render()};
 }
+
+const TM={'มค':1,'มกราคม':1,'กพ':2,'กุมภาพันธ์':2,'มีค':3,'มีนาคม':3,'เมย':4,'เมษายน':4,'พค':5,'พฤษภาคม':5,'มิย':6,'มิถุนายน':6,'กค':7,'กรกฎาคม':7,'สค':8,'สิงหาคม':8,'กย':9,'กันยายน':9,'ตค':10,'ตุลาคม':10,'พย':11,'พฤศจิกายน':11,'ธค':12,'ธันวาคม':12};
+const MR='มกราคม|กุมภาพันธ์|มีนาคม|เมษายน|พฤษภาคม|มิถุนายน|กรกฎาคม|สิงหาคม|กันยายน|ตุลาคม|พฤศจิกายน|ธันวาคม|ม\\.?ค\\.?|ก\\.?พ\\.?|มี\\.?ค\\.?|เม\\.?ย\\.?|พ\\.?ค\\.?|มิ\\.?ย\\.?|ก\\.?ค\\.?|ส\\.?ค\\.?|ก\\.?ย\\.?|ต\\.?ค\\.?|พ\\.?ย\\.?|ธ\\.?ค\\.?';
+const MS=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+const KWS='ขอไม่เอาเวร|ไม่เอาเวร|ไม่รับเวร|ไม่อยู่เวร|งดเวร|ขออยู่\\s*เวร|ขอเวร|อยู่เวร|ลา';
+const mnum=t=>TM[t.replace(/\./g,'')];
+const fyr=(y,def)=>{if(y==null||y==='')return def;y=+y;return y<100?2500+y-543:y>=2400?y-543:y};
+function expand(a,b){const out=[];let d=new Date(a.y,a.m-1,a.d),e=new Date(b.y,b.m-1,b.d);if(e<d){const t=d;d=e;e=t}for(let n=0;d<=e&&n<62;n++,d.setDate(d.getDate()+1))out.push({y:d.getFullYear(),m:d.getMonth()+1,d:d.getDate()});return out}
+function parseDates(str,defY){
+  let t=str;const out=[];
+  const take=(re,fn)=>{t=t.replace(re,(...m)=>{const r=fn(m);if(r)out.push(...r);return ' '})};
+  take(new RegExp(String.raw`((?:\d{1,2}[\s,]+)+\d{1,2})\s*เดือน\s*(${MR})\s*(\d{2,4})?`,'g'),m=>{const mo=mnum(m[2]);if(!mo)return;return m[1].split(/[\s,]+/).filter(Boolean).map(x=>({y:fyr(m[3],defY),m:mo,d:+x}))});
+  take(/(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{2,4})\s*[-–]\s*(\d{1,2})\s*\/\s*(\d{1,2})\s*\/\s*(\d{2,4})/g,m=>expand({y:fyr(m[3],defY),m:+m[2],d:+m[1]},{y:fyr(m[6],defY),m:+m[5],d:+m[4]}));
+  take(/(\d{1,2})\s*[-–]\s*(\d{1,2})\s*\/\s*(\d{1,2})(?:\s*\/\s*(\d{2,4}))?/g,m=>expand({y:fyr(m[4],defY),m:+m[3],d:+m[1]},{y:fyr(m[4],defY),m:+m[3],d:+m[2]}));
+  take(/(\d{1,2})\s*\/\s*(\d{1,2})(?:\s*\/\s*(\d{2,4}))?/g,m=>[{y:fyr(m[3],defY),m:+m[2],d:+m[1]}]);
+  take(new RegExp(String.raw`(\d{1,2})(?:\s*[-–]\s*(\d{1,2}))?\s*(?:เดือน\s*)?(${MR})\s*(\d{2,4})?`,'g'),m=>{const mo=mnum(m[3]);if(!mo)return;const y=fyr(m[4],defY);return expand({y,m:mo,d:+m[1]},{y,m:mo,d:+(m[2]||m[1])})});
+  return out.filter(x=>x.m>=1&&x.m<=12&&x.d>=1&&x.d<=31)}
+const kwStatus=k=>/ไม่|งด/.test(k)?'n':/อยู่|ขอเวร/.test(k)?'w':'x';
+function parseMsg(text,defY){
+  const t=text.replace(/[๐-๙]/g,c=>'๐๑๒๓๔๕๖๗๘๙'.indexOf(c)),ms=[...t.matchAll(new RegExp(KWS,'g'))],res=[];
+  ms.forEach((m,j)=>{const st=m.index+m[0].length,en=j+1<ms.length?ms[j+1].index:t.length;let seg=t.slice(st,en);
+    if(!/\d/.test(seg)&&j==0)seg=t.slice(0,m.index);
+    const ds=parseDates(seg,defY);if(ds.length)res.push({st:kwStatus(m[0]),dates:ds})});
+  return res}
+function aliasIdx(l){const q=l.trim().toLowerCase();return docs.findIndex((n,i)=>n.toLowerCase()===q||(cfg[i].alias||'').split(',').map(x=>x.trim().toLowerCase()).filter(Boolean).includes(q))}
+function parseChat(raw,defY){
+  const lines=raw.split(/\r?\n/).map(x=>x.trim()).filter(Boolean),KW1=new RegExp(KWS);
+  const isTs=l=>/^\d{1,2}\/\d{1,2},?\s+\d{1,2}:\d{2}(\s*(น\.|AM|PM))?$/i.test(l)||/^\d{1,2}:\d{2}$/.test(l);
+  const items=[];let sender='',buf=[];
+  const flush=()=>{if(buf.length){items.push({sender,text:buf.join(' ')});buf=[]}};
+  lines.forEach((l,k)=>{
+    if(isTs(l)){flush();return}
+    const nextHas=k+1<lines.length&&KW1.test(lines[k+1]);
+    const looksName=!/\d/.test(l)&&!KW1.test(l)&&l.length<=24&&!/(ครับ|ค่ะ|คะ|นะ|ค่า)$/.test(l)&&nextHas;
+    if(aliasIdx(l)>=0||looksName){flush();sender=l;return}
+    buf.push(l)});
+  flush();
+  const out=[];items.forEach(it=>parseMsg(it.text,defY).forEach(e=>out.push({sender:it.sender,st:e.st,dates:e.dates})));
+  return out}
+function fmtDates(ds){const out=[],T=x=>new Date(x.y,x.m-1,x.d).getTime();let i=0;
+  while(i<ds.length){let j=i;while(j+1<ds.length&&T(ds[j+1])-T(ds[j])==864e5)j++;const a=ds[i],b=ds[j];
+    out.push(i==j?`${a.d} ${MS[a.m-1]} ${a.y+543}`:`${a.d}${a.m==b.m&&a.y==b.y?'':' '+MS[a.m-1]}\u2013${b.d} ${MS[b.m-1]} ${b.y+543}`);i=j+1}
+  return out.join(', ')}
+function unmet(D,res){const ym=$('month').value;let n=0;Object.keys(want).forEach(k=>{if(!want[k]||k.indexOf(ym+'-')!==0)return;const p=k.lastIndexOf(':'),i=+k.slice(p+1),di=+k.slice(ym.length+1,p)-1;if(!res[di]||!res[di].includes(i))n++});return n}
+function wantWarn(){const ym=$('month').value,miss=[];
+  Object.keys(want).forEach(k=>{if(!want[k]||k.indexOf(ym+'-')!==0)return;const p=k.lastIndexOf(':'),i=+k.slice(p+1),dn=+k.slice(ym.length+1,p);if(!assign[dn-1]||!assign[dn-1].includes(i))miss.push(`${dn} (${docs[i]})`)});
+  if(miss.length)$('warn').insertAdjacentHTML('beforeend',`<div class="warn">\u0e02\u0e2d\u0e40\u0e27\u0e23\u0e41\u0e15\u0e48\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e40\u0e27\u0e23: ${miss.join(', ')}</div>`)}
+let impRes=[],impOn={},impMap={};
+function renderImp(){const box=$('impr');
+  if(!impRes.length){box.innerHTML='<p class="hint">\u0e44\u0e21\u0e48\u0e1e\u0e1a\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21\u0e17\u0e35\u0e48\u0e21\u0e35\u0e04\u0e33\u0e27\u0e48\u0e32 \u0e25\u0e32 / \u0e44\u0e21\u0e48\u0e40\u0e2d\u0e32\u0e40\u0e27\u0e23 / \u0e02\u0e2d\u0e2d\u0e22\u0e39\u0e48\u0e40\u0e27\u0e23 \u0e1e\u0e23\u0e49\u0e2d\u0e21\u0e27\u0e31\u0e19\u0e17\u0e35\u0e48</p>';return}
+  const senders=[...new Set(impRes.map(e=>e.sender||''))];
+  let h='<div style="margin-top:10px">'+senders.map(sn=>`<div class="row" style="align-items:center;margin-bottom:4px"><div style="flex:0 0 auto;min-width:90px;font-size:13px">${esc(sn||'(\u0e44\u0e21\u0e48\u0e21\u0e35\u0e0a\u0e37\u0e48\u0e2d)')} \u2192</div><div><select data-imps="${esc(sn)}"><option value="-1">\u2014 \u0e40\u0e25\u0e37\u0e2d\u0e01\u0e41\u0e1e\u0e17\u0e22\u0e4c \u2014</option>${docs.map((n,i)=>`<option value="${i}"${impMap[sn]==i?' selected':''}>${esc(n)}</option>`).join('')}</select></div></div>`).join('')+'</div>';
+  h+=impRes.map((e,k)=>`<label style="display:flex;gap:6px;align-items:flex-start;margin:6px 0;color:var(--tx);font-size:13px"><input type="checkbox" style="width:auto;margin-top:3px" data-impk="${k}" ${impOn[k]?'checked':''}><span><b>${e.st=='x'?'\u0e25\u0e32':e.st=='n'?'\u0e44\u0e21\u0e48\u0e40\u0e2d\u0e32\u0e40\u0e27\u0e23':'\u0e02\u0e2d\u0e2d\u0e22\u0e39\u0e48\u0e40\u0e27\u0e23'}</b> ${esc(fmtDates(e.dates))} <small style="color:var(--mut)">${esc(e.sender||'')}</small></span></label>`).join('');
+  h+='<button id="impa" style="margin-top:8px">\u0e19\u0e33\u0e40\u0e02\u0e49\u0e32\u0e17\u0e35\u0e48\u0e40\u0e25\u0e37\u0e2d\u0e01</button>';
+  box.innerHTML=h;
+  box.querySelectorAll('select[data-imps]').forEach(el=>el.onchange=()=>{impMap[el.dataset.imps]=+el.value});
+  box.querySelectorAll('input[data-impk]').forEach(el=>el.onchange=()=>{impOn[+el.dataset.impk]=el.checked});
+  $('impa').onclick=applyImp}
+function applyImp(){let n=0,skip=0;
+  impRes.forEach((e,k)=>{if(!impOn[k])return;const di=impMap[e.sender||''];if(di==null||di<0){skip++;return}
+    e.dates.forEach(x=>{const key2=`${x.y}-${String(x.m).padStart(2,'0')}-${x.d}:${di}`;if(e.st=='w'){want[key2]=true;unav[key2]=false}else{unav[key2]=e.st=='x'?true:'n';want[key2]=false}});n++});
+  Object.entries(impMap).forEach(([sn,di])=>{if(sn&&di>=0&&cfg[di]){const al=(cfg[di].alias||'').split(',').map(x=>x.trim()).filter(Boolean);if(!al.map(x=>x.toLowerCase()).includes(sn.toLowerCase())){al.push(sn);cfg[di].alias=al.join(', ')}}});
+  $('impr').innerHTML=`<p class="hint">\u0e19\u0e33\u0e40\u0e02\u0e49\u0e32\u0e41\u0e25\u0e49\u0e27 ${n} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23${skip?` (\u0e02\u0e49\u0e32\u0e21 ${skip} \u0e23\u0e32\u0e22\u0e01\u0e32\u0e23\u0e17\u0e35\u0e48\u0e22\u0e31\u0e07\u0e44\u0e21\u0e48\u0e44\u0e14\u0e49\u0e40\u0e25\u0e37\u0e2d\u0e01\u0e41\u0e1e\u0e17\u0e22\u0e4c)`:''} \u2014 \u0e01\u0e14 "\u0e08\u0e31\u0e14\u0e40\u0e27\u0e23\u0e2d\u0e31\u0e15\u0e42\u0e19\u0e21\u0e31\u0e15\u0e34" \u0e43\u0e2b\u0e21\u0e48\u0e40\u0e1e\u0e37\u0e48\u0e2d\u0e43\u0e0a\u0e49\u0e1c\u0e25</p>`;
+  $('imp').value='';impRes=[];render()}
+$('impb').onclick=()=>{
+  const sel=$('impd');sel.innerHTML='<option value="-1">\u2014 \u0e44\u0e21\u0e48\u0e23\u0e30\u0e1a\u0e38 \u2014</option>'+docs.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join('');
+  impRes=parseChat($('imp').value,+$('month').value.slice(0,4));impOn={};impMap={};
+  impRes.forEach((e,k)=>{impOn[k]=true;const sn=e.sender||'';if(!(sn in impMap)){const ai=sn?aliasIdx(sn):-1;impMap[sn]=ai>=0?ai:(sn?-1:+sel.value)}});
+  renderImp()};
+
+function payCalc(){const D=days(),ym=$('month').value,rd=RD[ym]||[],rows=docs.map(()=>({m:0,a:0,n:0,r:0,xm:0,xa:0,xn:0,xr:0}));
+  D.forEach((d,di)=>{const f=(mult[ym+'-'+d.n]||1)-1;
+    (assign[di]||[]).forEach(i=>{if(i<0||!rows[i])return;rows[i].a++;rows[i].n++;rows[i].xa+=f;rows[i].xn+=f;if(d.wk){rows[i].m++;rows[i].xm+=f}});
+    if(d.wk&&rd[di]>=0&&rows[rd[di]]){rows[rd[di]].r++;rows[rd[di]].xr+=f}});
+  return rows}
+const payOf=(p,k)=>Math.round((p[k]+p['x'+k])*rates[k]);
+const baht=n=>Math.round(n).toLocaleString('en-US');
+function mgroups(){const ks=Object.keys(mult).filter(k=>mult[k]&&mult[k]!==1).map(k=>{const[y,m,d]=k.split('-').map(Number);return{k,t:new Date(y,m-1,d).getTime(),y,m,d,f:mult[k]}}).sort((x,y)=>x.t-y.t),g=[];
+  ks.forEach(x=>{const l=g[g.length-1];if(l&&l.f===x.f&&x.t-l.last.t===864e5){l.last=x;l.keys.push(x.k)}else g.push({f:x.f,first:x,last:x,keys:[x.k]})});return g}
+function renderMult(){const box=$('mfl');if(!box)return;const g=mgroups();
+  box.innerHTML=g.length?'<div style="margin-top:8px;font-size:13px">'+g.map((x,i)=>`<div style="padding:4px 0;border-top:1px solid var(--bd)">${esc(fmtDates([x.first,x.last]).replace(/, /,' – '))} <b>×${x.f}</b> <button class="sec" data-mdel="${i}" style="padding:2px 8px;font-size:12px">ลบ</button></div>`).join('')+'</div>':''}
+function renderPay(){
+  [['m','rt_m'],['a','rt_a'],['n','rt_n'],['r','rt_r']].forEach(([k,id])=>{const el=$(id);if(el&&document.activeElement!==el)el.value=rates[k];if(el)el.oninput=()=>{rates[k]=+el.value||0;renderPay();saveSoon()}});
+  const rows=payCalc(),T={m:0,a:0,n:0,r:0},TA={m:0,a:0,n:0,r:0};let g=0;
+  let h='<tr><th style="text-align:left">แพทย์</th><th>เช้า</th><th>ค่าเวร</th><th>บ่าย</th><th>ค่าเวร</th><th>ดึก</th><th>ค่าเวร</th><th>ราวน์</th><th>ค่าเวร</th><th>รวม</th></tr>';
+  rows.forEach((p,i)=>{let tot=0;['m','a','n','r'].forEach(k=>{T[k]+=p[k];const v=payOf(p,k);TA[k]+=v;tot+=v});g+=tot;
+    h+=`<tr><td style="text-align:left">${esc(docs[i])}</td><td>${p.m}</td><td>${baht(payOf(p,'m'))}</td><td>${p.a}</td><td>${baht(payOf(p,'a'))}</td><td>${p.n}</td><td>${baht(payOf(p,'n'))}</td><td>${p.r}</td><td>${baht(payOf(p,'r'))}</td><td><b>${baht(tot)}</b></td></tr>`});
+  h+=`<tr style="font-weight:600"><td style="text-align:left">รวม</td><td>${T.m}</td><td>${baht(TA.m)}</td><td>${T.a}</td><td>${baht(TA.a)}</td><td>${T.n}</td><td>${baht(TA.n)}</td><td>${T.r}</td><td>${baht(TA.r)}</td><td>${baht(g)}</td></tr>`;
+  $('pay').innerHTML=h;
+  const ym=$('month').value,md=Object.keys(mult).filter(k=>k.indexOf(ym+'-')===0&&mult[k]!==1).map(k=>+k.slice(ym.length+1)).sort((x,y)=>x-y);
+  const pn=$('payn');if(pn)pn.textContent=md.length?`เดือนนี้มีวันคูณตัวคูณ: วันที่ ${md.join(', ')} (รวมในค่าเวรแล้ว)`:'';
+  renderMult()}
+
+function fillSel(id){const e=$(id);if(!e)return;const v=e.value;e.innerHTML=docs.map((n,i)=>`<option value="${i}">${esc(n)}</option>`).join('');if(v&&+v<docs.length)e.value=v}
+function fillLR(){fillSel('lrd');fillSel('swf');fillSel('swto')}
+function monthSwaps(){const ym=$('month').value;return swaps.filter(x=>x.d1.slice(0,7)===ym||(x.d2&&x.d2.slice(0,7)===ym))}
+function fmtD(t){const[y,m,d]=t.split('-').map(Number);return `${d} ${MS[m-1]} ${y+543}`}
+function rowFor(date){const ym=date.slice(0,7),dn=+date.slice(8,10),a=ym===$('month').value?assign:AS[ym];return a&&a[dn-1]?a[dn-1]:null}
+function swMsg(m,bad){$('swm').innerHTML=`<p class="hint" style="${bad?'color:var(--bad)':''}">${m}</p>`}
+function doSwap(){
+  const ty=$('swt').value,f=+$('swf').value,to=+$('swto').value,d1=$('swd1').value,d2=$('swd2').value,note=$('swn').value.trim();
+  if(f===to)return swMsg('เลือกแพทย์สองคนที่ต่างกัน',1);
+  if(!d1)return swMsg('เลือกวันที่เวร',1);
+  const r1=rowFor(d1);
+  if(!r1||!r1.includes(f))return swMsg(`${esc(docs[f])} ไม่ได้อยู่เวรวันที่ ${fmtD(d1)} ในตาราง (หรือยังไม่ได้จัดเวรเดือนนั้น)`,1);
+  if(r1.includes(to))return swMsg(`${esc(docs[to])} อยู่เวรวันนั้นอยู่แล้ว`,1);
+  let r2=null;
+  if(ty==='swap'){
+    if(!d2)return swMsg('เลือกวันที่เวรของอีกฝ่าย',1);
+    if(d2===d1)return swMsg('แลกเวรต้องเป็นสองวันที่ต่างกัน',1);
+    r2=rowFor(d2);
+    if(!r2||!r2.includes(to))return swMsg(`${esc(docs[to])} ไม่ได้อยู่เวรวันที่ ${fmtD(d2)} ในตาราง`,1);
+    if(r2.includes(f))return swMsg(`${esc(docs[f])} อยู่เวรวันที่ ${fmtD(d2)} อยู่แล้ว`,1)}
+  r1[r1.indexOf(f)]=to;if(r2)r2[r2.indexOf(to)]=f;
+  swaps.push({id:Date.now(),ty,f,to,d1,d2:ty==='swap'?d2:'',note,void:false});
+  $('swn').value='';render();
+  swMsg('บันทึกและสลับเวรแล้ว — ดูคำเตือนด้านบน (เวรติดกัน/กฎของแพทย์) และ R ของวันถัดไปจะย้ายตามคนที่ขึ้นเวรจริง')}
+function undoSw(id){const e=swaps.find(x=>x.id==id);if(!e||e.void)return;const r1=rowFor(e.d1),r2=e.ty==='swap'?rowFor(e.d2):null;
+  if(!r1||!r1.includes(e.to)||(e.ty==='swap'&&(!r2||!r2.includes(e.f))))return alert('ตารางเปลี่ยนไปแล้ว ย้อนกลับอัตโนมัติไม่ได้ ให้แก้ในตารางเอง');
+  r1[r1.indexOf(e.to)]=e.f;if(r2)r2[r2.indexOf(e.f)]=e.to;swaps=swaps.filter(x=>x.id!=e.id);render()}
+function renderSw(){const box=$('swr');if(!box)return;const ms=monthSwaps();
+  box.innerHTML=ms.length?'<div style="margin-top:8px;font-size:13px">'+ms.map(e=>`<div style="padding:4px 0;border-top:1px solid var(--bd);${e.void?'opacity:.55;text-decoration:line-through':''}">${esc(fmtD(e.d1))}: ${esc(docs[e.f]||'?')} → ${esc(docs[e.to]||'?')} <b>${e.ty==='swap'?'แลกเวร':'ซื้อเวร/โอนเวร'}</b>${e.d2?` · อีกฝ่ายขึ้นแทนวันที่ ${esc(fmtD(e.d2))}`:''}${e.note?` · ${esc(e.note)}`:''}${e.void?' (ถูกล้างเมื่อจัดเวรใหม่)':` <button class="sec" data-undo="${e.id}" style="padding:2px 8px;font-size:12px">ยกเลิก</button>`}</div>`).join('')+'</div>':''}
+$('swb').onclick=doSwap;
+$('swt').onchange=()=>{$('swd2w').style.display=$('swt').value==='swap'?'':'none'};
+$('swr').addEventListener('click',e=>{const b=e.target.closest('[data-undo]');if(b)undoSw(+b.dataset.undo)});
+
+function mDates(a,b,f){const A=new Date(a+'T00:00:00'),B=new Date(b+'T00:00:00');if(isNaN(A)||isNaN(B)||B<A)return 0;let n=0;for(let d=new Date(A);d<=B&&n<400;d.setDate(d.getDate()+1),n++){const k=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${d.getDate()}`;if(f===1)delete mult[k];else mult[k]=f}return n}
+$('mfa').onclick=()=>{const f=+$('mfx').value,a=$('mf1').value,b=$('mf2').value||a;if(!a||!(f>=0))return;if(mDates(a,b,f)){render()}};
+$('mfy').onclick=()=>{const [y,m]=$('month').value.split('-').map(Number),y0=m>=7?y:y-1;$('mf1').value=`${y0}-12-31`;$('mf2').value=`${y0+1}-01-02`;$('mfx').value=$('mfx').value||'1.5'};
+$('mfs').onclick=()=>{const y=+$('month').value.slice(0,4);$('mf1').value=`${y}-04-13`;$('mf2').value=`${y}-04-15`;$('mfx').value=$('mfx').value||'1.5'};
+$('mfl').addEventListener('click',e=>{const b=e.target.closest('[data-mdel]');if(!b)return;const g=mgroups()[+b.dataset.mdel];if(g){g.keys.forEach(k=>delete mult[k]);render()}});
 docs=DEFD();cfg=DEFC();U=DEFU();
 renderNames();renderUnits();render();
 try{const raw=localStorage.getItem(LSK);if(raw){applyState(JSON.parse(raw));$('sync').textContent='โหลดข้อมูลที่บันทึกไว้ในเครื่องนี้แล้ว'}else $('sync').textContent='ข้อมูลจะถูกบันทึกในเบราว์เซอร์เครื่องนี้เท่านั้น'}catch(e){}
 $('bk').onclick=()=>{downloadFile(`doctor-shift-backup-${new Date().toISOString().slice(0,10)}.json`,new Blob([JSON.stringify(snapshotState())],{type:'application/json'}))};
 $('rs').onclick=()=>$('rsf').click();
 $('rsf').onchange=async e=>{const f=e.target.files[0];if(!f)return;try{const st=JSON.parse(await f.text());if(!st.docs||!st.cfg||!st.U)throw 0;if(confirm('นำเข้าข้อมูลนี้จะทับข้อมูลในหน้านี้ทั้งหมด ต้องการดำเนินการต่อ?')){applyState(st);saveSoon()}}catch(err){alert('ไฟล์ไม่ถูกต้อง')}e.target.value=''};
+
+if('serviceWorker' in navigator&&/^https?:$/.test(location.protocol))navigator.serviceWorker.register('sw.js').catch(()=>{});
+let deferredInst=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredInst=e;$('inst').style.display=''});
+$('inst').onclick=async()=>{if(!deferredInst)return;deferredInst.prompt();try{await deferredInst.userChoice}catch(e){}deferredInst=null;$('inst').style.display='none'};
+window.addEventListener('appinstalled',()=>{$('inst').style.display='none'});
+(()=>{const ios=/iPhone|iPad|iPod/i.test(navigator.userAgent)||(navigator.platform==='MacIntel'&&navigator.maxTouchPoints>1),st=(window.matchMedia&&matchMedia('(display-mode: standalone)').matches)||navigator.standalone;if(ios&&!st){const h=$('insth');h.style.display='';h.textContent='ติดตั้งเป็นแอปบน iPhone: แตะปุ่มแชร์ของ Safari แล้วเลือก "เพิ่มไปยังหน้าจอโฮม"'}})();
 </script>
 </body>
 </html>
